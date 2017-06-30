@@ -1,5 +1,7 @@
 
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.lang.StringBuffer;
 import edu.princeton.cs.algs4.StdRandom;
 
 
@@ -84,6 +86,12 @@ public class Board {
     }
     
     private Board swap(x1, x2, y1, y2) {
+        int dim = dimension()
+        if (x1 < 0 || x2 < 0 || y1 < 0 || y2 < 0
+           || x1 >= dim || x2 >= dim || y1 >= dim 
+           || y2 >= dim){
+            throw new java.lang.IllegalArgumentException();
+        }
         int [][] boardCopy = Arrays.copyOf(board, 0, board.length;);
         int tmp = boardCopy[x1][y1];
         boardCopy[x1][y1] = boardCopy[x2][y2];
@@ -99,18 +107,52 @@ public class Board {
     
     public Iterable<Board> neighbors() {
         
-        return new Iterable<Board>() {
-         
-            
-            
+        return new BoardIterator();
+    }
+    
+    private class BoardIterator implements Iterator<Board>{
+        
+        private ArrayList<Board> neighbors = new ArrayList<>();
+        int i = 0;
+        
+        public BoardIterator(){
+            for (int i = -1; i <= 1; i += 2){
+                try {
+                    neighbors.append(swap(zeroX, zeroY, zeroX + i, zeroY));
+                } 
+                catch(java.lang.IllegalArgumentException) {          
+                }
+                try {
+                     neighbors.append(swap(zeroX, zeroY, zeroX, zeroY + i));
+                } 
+                catch(java.lang.IllegalArgumentException) {          
+                }
+            }
         }
         
+        public boolean hasNext() {
+            return i < neighbors.size();
+        }
+        
+        public Board next() {
+            if (!hasNext()) throw new 
+            
+        }
     }
     
     
     public String toString() {
-        
-        
+        StringBuffer sb = new StringBuffer();
+        sb.append(dimension());
+        sb.append("\n");
+        for (int i = 0; i < dimension(); i++) {
+            for (int j = 0; j < dimension(); j++) {
+                sb.append(dimension[i][j]);
+                if (i != dimension() - 1) sb.append(" ");
+            }
+            if (j != dimension() - 1) sb.append("\n");
+        }
+        return sb.toString();
     }
     
     
