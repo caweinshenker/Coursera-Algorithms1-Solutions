@@ -47,20 +47,35 @@ public class KdTree {
     }
     
     
-    private Node insert_helper(Node root, Point2D p, int orientation){
+    private Node insert_helper(Node root, Point2D p, RectHV rect, int orientation){
         if (root == null){
-            root = new Node(p, null);
+            root = new Node(p, rect);
         }
-        int cmp = p.compareTo(root.p);
         if (orientation == Node.XSPLIT) {
             orientation = Node.YSPLIT;
-            if (p.x() < root.p.x()) root.lb = insert_helper(root.lb, p, orientation);
-            if (p.x() > root.p.x()) root.rt = insert_helper(root.rt, p, orientation);            
+            if (p.x() < root.p.x()) root.lb = insert_helper(
+                                     root.lb,
+                                     p, 
+                                     new RectHV(rect.xmin(), root.rect.ymin(), root.rect.xmax(), root.rect.ymax()),
+                                     orientation);
+            if (p.x() > root.p.x()) root.rt = insert_helper(
+                                     root.rt,
+                                     p, 
+                                     new RectHV(root.rect.xmin(), root.rect.ymin(), rect.xmax(), root.rect.ymax()),
+                                     orientation);          
         }
         else if (orientation == Node.YSPLIT) {
              orientation = Node.XSPLIT;
-             if (p.y() < root.p.y()) root.lb = insert_helper(root.lb, p, orientation);
-             if (p.y() > root.p.y()) root.rt = insert_helper(root.rt, p, orientation);
+             if (p.y() < root.p.y()) root.lb = insert_helper(
+                                     root.lb, 
+                                     p,
+                                     new RectHV(root.rect.xmin(), rect.ymin(), root.rect.xmax(), root.rect.ymax()),
+                                     orientation);
+             if (p.y() > root.p.y()) root.rt = insert_helper(
+                                     root.rt, 
+                                     p,
+                                     new RectHV(root.rect.xmin(), root.rect.ymin(), root.rect.xmax(), rect.ymax()),
+                                     orientation);
             
         }
         return root;
@@ -68,7 +83,7 @@ public class KdTree {
     
     public void insert(Point2D p){
         if (p == null) throw new IllegalArgumentException();
-        root = insert_helper(root, p, Node.XSPLIT);
+        root = insert_helper(root, p, new RectHV(0, 0, 1, 1), Node.XSPLIT);
     }
     
     private Node get(Point2D p){
@@ -119,24 +134,26 @@ public class KdTree {
         return range(root, rect);
     }
     
-    private void points(Node root, ArrayList<Point2D> points) {
+    private void nodes(Node root, ArrayList<Node> nodes) {
         if (root == null) return;
-        points.add(root.p);
-        points(root.lb, points);
-        points(root.rt, points);
-        
+        nodes.add(root);
+        nodes(root.lb, nodes);
+        nodes(root.rt, nodes);
     }
     
-    private Iterable<Point2D> points(){
-        ArrayList<Point2D> points = new ArrayList<>();
-        points(root, points);
-        return points;
+    private Iterable<Node> nodes(){
+        ArrayList<Node> nodes = new ArrayList<>();
+        nodes(root, nodes);
+        return nodes;
         
     }
     
     public void draw() {
-        for (Point2D p : this.points()) {
-            p.draw();
+        for (Node n : this.nodes()) {
+            n.p.draw();
+            n.rect.draw();
+            StdOut.println(n.p.toString());
+            StdOut.println(n.rect.toString());
         }
     }
     
