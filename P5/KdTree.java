@@ -2,10 +2,10 @@ import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
 import edu.princeton.cs.algs4.StdDraw;
 import edu.princeton.cs.algs4.StdOut;
-import edu.princeton.cs.algs4.SET;
 import java.lang.Float;
 import java.util.ArrayList;
 import java.lang.*;
+import java.util.*;
 
 
 public class KdTree {
@@ -18,6 +18,7 @@ public class KdTree {
         private RectHV rect;
         private Node lb;
         private Node rt;
+        private int split;
         
         public Node(Point2D p, RectHV rect){
             this.p = p;
@@ -32,7 +33,7 @@ public class KdTree {
     private Node root;
     
     public KdTree() {
-        root = null;
+        root = new Node(new Point2D(1, 1), new RectHV(0, 0, 1, 1));
         size = 0;
         
     }
@@ -47,67 +48,52 @@ public class KdTree {
     }
     
     
-    private Node insert_helper(Node root, Point2D p, RectHV rect, int orientation){
-        if (root == null){
-            root = new Node(p, rect);
-            return root;
+    private Node insert_helper(Node rt, Point2D p, double xmin, double ymin, double xmax, double ymax, int or) {
+        if (rt == null) {
+            if (size == 0) rt = new Node(p, new RectHV(xmin, ymin, p.x(), ymax));
+            else if (size == 1) rt = new Node(p, new RectHV(xmin, p.y(), xmax, ymax));
+            else rt = new Node(p, new RectHV(xmin, ymin, xmax, ymax));
+            size++;
         }
-        //StdOut.println("Root: " + root.p.toString() + ", Rect: " + root.rect.toString() + " Orientation: " + Integer.toString(orientation));
-        //StdOut.println(n.rect.toString()
-        if (orientation == Node.XSPLIT) {
-            orientation = Node.YSPLIT;
-            if (p.x() < root.p.x()) root.lb = insert_helper(
-                                     root.lb,
-                                     p, 
-                                     new RectHV(root.rect.xmin(), root.rect.ymin(), root.p.x(), root.rect.ymax()),
-                                     orientation);
-            if (p.x() > root.p.x()) root.rt = insert_helper(
-                                     root.rt,
-                                     p, 
-                                     new RectHV(root.p.x(), root.rect.ymin(), root.rect.xmax(), root.rect.ymax()),
-                                     orientation);          
+        else if (or == Node.XSPLIT) {
+            StdOut.println("X SPLIT");
+            or = Node.YSPLIT;
+            if (p.x() < rt.p.x()) rt.lb = insert_helper(rt.lb, p, xmin, ymin, rt.p.x(), ymax, or);
+            if (p.x() > rt.p.x()) rt.rt = insert_helper(rt.rt, p, rt.p.x(), ymin, xmax, ymax, or);   
         }
-        else if (orientation == Node.YSPLIT) {
-             orientation = Node.XSPLIT;
-             if (p.y() < root.p.y()) root.lb = insert_helper(
-                                     root.lb, 
-                                     p,
-                                     new RectHV(root.rect.xmin(), rect.ymin(), root.rect.xmax(), root.p.y()),
-                                     orientation);
-             if (p.y() > root.p.y()) root.rt = insert_helper(
-                                     root.rt, 
-                                     p,
-                                     new RectHV(root.rect.xmin(), root.p.y(), root.rect.xmax(), rect.ymax()),
-                                     orientation);
-            
+        else if (or == Node.YSPLIT) {
+            StdOut.println("Y SPLIT");
+             or = Node.XSPLIT;
+             if (p.y() < rt.p.y()) rt.lb = insert_helper(rt.lb, p, xmin, ymin, xmax, rt.p.y(), or);
+             if (p.y() > rt.p.y()) rt.rt = insert_helper(rt.rt, p, xmin, rt.p.y(), xmax, ymax, or);
         }
-        return root;
+        return rt;
     }
     
     public void insert(Point2D p){
         if (p == null) throw new IllegalArgumentException();
-        root = insert_helper(root, p, new RectHV(0, 0, 1, 1), Node.XSPLIT);
+        root = insert_helper(root, p, 0.0, 0.0, 1.0, 1.0, Node.XSPLIT);
+
     }
     
     private Node get(Point2D p){
         return get(root, p, Node.XSPLIT);   
     }
     
-    private Node get(Node root, Point2D p, int orientation) {
+    private Node get(Node rt, Point2D p, int orientation) {
         if (p == null) throw new IllegalArgumentException();
-        if (root == null) return null;
-        
+        if (rt == null) return null;
         if (orientation == Node.XSPLIT) {
             orientation = Node.YSPLIT;
-            if (p.x() < root.p.x()) return get(root.lb, p, orientation);
-            if (p.x() > root.p.x()) return get(root.rt, p, orientation);
+            if (p.x() < rt.p.x()) return get(rt.lb, p, orientation);
+            if (p.x() > rt.p.x()) return get(rt.rt, p, orientation);
         }
         else if (orientation == Node.YSPLIT) {
             orientation = Node.XSPLIT;
-            if (p.y() < root.p.y()) return get(root.lb, p, orientation);
-            if (p.y() > root.p.y()) return get(root.rt, p, orientation);
+            if (p.y() < rt.p.y()) return get(rt.lb, p, orientation);
+            if (p.y() > rt.p.y()) return get(rt.rt, p, orientation);
         }
-        return root;   
+        return rt;   
      }
     
     public boolean contains(Point2D p) {
@@ -151,21 +137,57 @@ public class KdTree {
         
     }
     
-    private Point2D nearest(Point2D p, double dist) {
-        
+    private Point2D nearest(Node root, Point2D p, double min_dist, int orientation) {
+        Point2D candidate1;
+        Point2D candidate2;
+        double dist = root.rect.distanceSquaredTo(p);
+        if (min_dist <= dist) return root.p;
+        else {
+            min_dist = dist;
+            if (orientation == Node.XSPLIT) {
+                if (p.x() < root.p.x()) {
+                    orientation = Node.YSPLIT;
+                    candidate1 = nearest(root.lb, p, min_dist, orientation);
+                    if (root.rect.distanceSquaredTo(candidate1) < min_dist) return candidate1;
+                    candidate2 = nearest(root.rt, p, min_dist, orientation);
+                     if (root.rect.distanceSquaredTo(candidate2) < min_dist) return candidate2;
+                }
+                else if (p.x() > root.p.x()) {
+                    candidate1 = nearest(root.rt, p, min_dist, orientation);
+                    if (root.rect.distanceSquaredTo(candidate1) < min_dist) return candidate1;
+                    candidate2 = nearest(root.lb, p, min_dist, orientation);
+                    if (root.rect.distanceSquaredTo(candidate2) < min_dist) return candidate2;
+                }
+            }
+            else {
+                orientation = Node.XSPLIT;
+                if (p.y() < root.p.y()) {
+                    candidate1 = nearest(root.lb, p, min_dist, orientation);
+                    if (root.rect.distanceSquaredTo(candidate1) < min_dist) return candidate1;
+                    candidate2 = nearest(root.rt, p, min_dist, orientation);
+                    if (root.rect.distanceSquaredTo(candidate2) < min_dist) return candidate2;
+                }
+                else if (p.y() > root.p.y()) {
+                    candidate1 = nearest(root.rt, p, min_dist, orientation);
+                    if (root.rect.distanceSquaredTo(candidate1) < min_dist) return candidate1;
+                    candidate2 = nearest(root.lb, p, min_dist, orientation);
+                    if (root.rect.distanceSquaredTo(candidate2) < min_dist) return candidate2;
+                }
+            }
+        }
+        return root.p;
     }
     
-    /*TODO
-     * 
-     */
     public Point2D nearest(Point2D p) {
-        return null;
+        return nearest(root, p, Double.MAX_VALUE, Node.XSPLIT);
         
     }
     
     public void draw() {
         int count = 0;
-        for (Node n : this.nodes()) {
+        ArrayList<Node> nodes = (ArrayList<Node>) nodes();
+        for (int i = 1; i < nodes.size(); i++) {
+            Node n = nodes.get(i);
             StdDraw.setPenColor(StdDraw.BLACK);
             StdDraw.setPenRadius(0.01);
             n.p.draw();
