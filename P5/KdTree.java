@@ -50,18 +50,21 @@ public class KdTree {
     private Node insert_helper(Node root, Point2D p, RectHV rect, int orientation){
         if (root == null){
             root = new Node(p, rect);
+            return root;
         }
+        //StdOut.println("Root: " + root.p.toString() + ", Rect: " + root.rect.toString() + " Orientation: " + Integer.toString(orientation));
+        //StdOut.println(n.rect.toString()
         if (orientation == Node.XSPLIT) {
             orientation = Node.YSPLIT;
             if (p.x() < root.p.x()) root.lb = insert_helper(
                                      root.lb,
                                      p, 
-                                     new RectHV(rect.xmin(), root.rect.ymin(), root.rect.xmax(), root.rect.ymax()),
+                                     new RectHV(root.rect.xmin(), root.rect.ymin(), root.p.x(), root.rect.ymax()),
                                      orientation);
             if (p.x() > root.p.x()) root.rt = insert_helper(
                                      root.rt,
                                      p, 
-                                     new RectHV(root.rect.xmin(), root.rect.ymin(), rect.xmax(), root.rect.ymax()),
+                                     new RectHV(root.p.x(), root.rect.ymin(), root.rect.xmax(), root.rect.ymax()),
                                      orientation);          
         }
         else if (orientation == Node.YSPLIT) {
@@ -69,12 +72,12 @@ public class KdTree {
              if (p.y() < root.p.y()) root.lb = insert_helper(
                                      root.lb, 
                                      p,
-                                     new RectHV(root.rect.xmin(), rect.ymin(), root.rect.xmax(), root.rect.ymax()),
+                                     new RectHV(root.rect.xmin(), rect.ymin(), root.rect.xmax(), root.p.y()),
                                      orientation);
              if (p.y() > root.p.y()) root.rt = insert_helper(
                                      root.rt, 
                                      p,
-                                     new RectHV(root.rect.xmin(), root.rect.ymin(), root.rect.xmax(), rect.ymax()),
+                                     new RectHV(root.rect.xmin(), root.p.y(), root.rect.xmax(), rect.ymax()),
                                      orientation);
             
         }
@@ -93,6 +96,7 @@ public class KdTree {
     private Node get(Node root, Point2D p, int orientation) {
         if (p == null) throw new IllegalArgumentException();
         if (root == null) return null;
+        
         if (orientation == Node.XSPLIT) {
             orientation = Node.YSPLIT;
             if (p.x() < root.p.x()) return get(root.lb, p, orientation);
@@ -114,11 +118,9 @@ public class KdTree {
     
     private void range(Node root,RectHV rect, ArrayList<Point2D> range) {
         if (root == null) return;
-        if (root.rect.contains(root.p)) range.add(root.p);
-        if (root.p.x() < rect.xmin() || root.p.y() < rect.ymin()) {
+        if (rect.contains(root.p)) range.add(root.p);
+        if (rect.intersects(root.rect)) {
             range(root.lb, rect, range);
-        }
-        if (root.p.x() > rect.xmax() || root.p.y() > rect.ymax()) {
             range(root.rt, rect, range);
         }
     }
@@ -141,6 +143,7 @@ public class KdTree {
         nodes(root.rt, nodes);
     }
     
+    
     private Iterable<Node> nodes(){
         ArrayList<Node> nodes = new ArrayList<>();
         nodes(root, nodes);
@@ -148,12 +151,30 @@ public class KdTree {
         
     }
     
+    private Point2D nearest(Point2D p, double dist) {
+        
+    }
+    
+    /*TODO
+     * 
+     */
+    public Point2D nearest(Point2D p) {
+        return null;
+        
+    }
+    
     public void draw() {
+        int count = 0;
         for (Node n : this.nodes()) {
+            StdDraw.setPenColor(StdDraw.BLACK);
+            StdDraw.setPenRadius(0.01);
             n.p.draw();
+            if (count % 2 == 0) StdDraw.setPenColor(StdDraw.RED);
+            else StdDraw.setPenColor(StdDraw.BLUE);
+            StdDraw.setPenRadius();
             n.rect.draw();
-            StdOut.println(n.p.toString());
-            StdOut.println(n.rect.toString());
+            StdOut.println(n.p.toString() + " " + n.rect.toString());
+            count++;
         }
     }
     
