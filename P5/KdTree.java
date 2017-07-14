@@ -58,12 +58,12 @@ public class KdTree {
         else if (or == Node.XSPLIT) {
             or = Node.YSPLIT;
             if (p.x() < rt.p.x()) rt.lb = insert_helper(rt.lb, p, xmin, ymin, rt.p.x(), ymax, or);
-            else if (p.x() >= rt.p.x()) rt.rt = insert_helper(rt.rt, p,  rt.p.x(), ymin, xmax, ymax, or); 
+            else rt.rt = insert_helper(rt.rt, p,  rt.p.x(), ymin, xmax, ymax, or); 
         }
         else if (or == Node.YSPLIT) {
              or = Node.XSPLIT;
              if (p.y() < rt.p.y()) rt.lb = insert_helper(rt.lb, p, xmin, ymin, xmax, rt.p.y(), or);
-             else if (p.y() >= rt.p.y()) rt.rt = insert_helper(rt.rt, p, xmin, rt.p.y(), xmax, ymax, or);
+             else rt.rt = insert_helper(rt.rt, p, xmin, rt.p.y(), xmax, ymax, or);
         }
         return rt;
     }
@@ -81,13 +81,12 @@ public class KdTree {
         else if (orientation == Node.XSPLIT) {
             orientation = Node.YSPLIT;
             if (p.x() < rt.p.x()) return get(rt.lb, p, orientation);
-            if (p.x() >= rt.p.x()) return get(rt.rt, p, orientation);
+            else return get(rt.rt, p, orientation);
         }
         else if (orientation == Node.YSPLIT) {
             orientation = Node.XSPLIT;
             if (p.y() < rt.p.y()) return get(rt.lb, p, orientation);
-            if (p.y() >= rt.p.y()) return get(rt.rt, p, orientation);
-            return get(rt, p, orientation);
+            else return get(rt.rt, p, orientation);
         }
         return rt;   
      }
@@ -179,12 +178,5 @@ public class KdTree {
     public void draw() {
         draw(root, Node.XSPLIT);
     }
-    
-   
-    public static void main(String args[]) {
-        
-        
-    }
-    
     
 }
