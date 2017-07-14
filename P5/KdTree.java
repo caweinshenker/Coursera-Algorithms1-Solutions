@@ -50,18 +50,20 @@ public class KdTree {
     
     private Node insert_helper(Node rt, Point2D p, double xmin, double ymin, double xmax, double ymax, int or) {
         if (rt == null) {
-            rt = new Node(p, new RectHV(xmin, ymin, xmax, ymax));
             size++;
+            return new Node(p, new RectHV(xmin, ymin, xmax, ymax));
         }
+        //Ignore duplicate nodes
+        else if (rt.p.equals(p)) return rt;
         else if (or == Node.XSPLIT) {
             or = Node.YSPLIT;
             if (p.x() < rt.p.x()) rt.lb = insert_helper(rt.lb, p, xmin, ymin, rt.p.x(), ymax, or);
-            else if (p.x() > rt.p.x()) rt.rt = insert_helper(rt.rt, p,  rt.p.x(), ymin, xmax, ymax, or);   
+            else if (p.x() >= rt.p.x()) rt.rt = insert_helper(rt.rt, p,  rt.p.x(), ymin, xmax, ymax, or); 
         }
         else if (or == Node.YSPLIT) {
              or = Node.XSPLIT;
              if (p.y() < rt.p.y()) rt.lb = insert_helper(rt.lb, p, xmin, ymin, xmax, rt.p.y(), or);
-             else if (p.y() > rt.p.y()) rt.rt = insert_helper(rt.rt, p, xmin, rt.p.y(), xmax, ymax, or);
+             else if (p.y() >= rt.p.y()) rt.rt = insert_helper(rt.rt, p, xmin, rt.p.y(), xmax, ymax, or);
         }
         return rt;
     }
@@ -75,15 +77,17 @@ public class KdTree {
     private Node get(Node rt, Point2D p, int orientation) {
         if (p == null) throw new IllegalArgumentException();
         if (rt == null) return null;
+        if (rt.p.equals(p)) return rt;
         else if (orientation == Node.XSPLIT) {
             orientation = Node.YSPLIT;
             if (p.x() < rt.p.x()) return get(rt.lb, p, orientation);
-            if (p.x() > rt.p.x()) return get(rt.rt, p, orientation);
+            if (p.x() >= rt.p.x()) return get(rt.rt, p, orientation);
         }
         else if (orientation == Node.YSPLIT) {
             orientation = Node.XSPLIT;
             if (p.y() < rt.p.y()) return get(rt.lb, p, orientation);
-            if (p.y() > rt.p.y()) return get(rt.rt, p, orientation);
+            if (p.y() >= rt.p.y()) return get(rt.rt, p, orientation);
+            return get(rt, p, orientation);
         }
         return rt;   
      }
@@ -96,8 +100,8 @@ public class KdTree {
     
     private void range(Node rt,RectHV rect, ArrayList<Point2D> range) {
         if (rt == null) return;
-        if (rect.contains(rt.p)) range.add(rt.p);
         if (rect.intersects(rt.rect)) {
+            if (rect.contains(rt.p)) range.add(rt.p);
             range(rt.lb, rect, range);
             range(rt.rt, rect, range);
         }
@@ -125,18 +129,23 @@ public class KdTree {
     }
     
     private Point2D nearest(Node rt, Point2D p, Point2D nearest) {
-        double min_dist = nearest.distanceSquaredTo(p);
-        double dist = rt.rect.distanceSquaredTo(p);
-        
-        if (min_dist <= dist) {
-            //Check which side of the splitting line to check first
-            if (rt.lb != null && rt.lb.rect.contains(p)) {
-                nearest = nearest(rt.lb, p, rt.p);
-                nearest = nearest(rt.rt, p, rt.p);
-            }
-            else {
-                nearest = nearest(rt.rt, p, rt.p);
-                nearest = nearest(rt.lb, p, rt.p);
+        //StdOut.println(nearest.toString());
+        if (rt != null) {
+            double min_dist = nearest.distanceSquaredTo(p);
+            double dist = rt.rect.distanceSquaredTo(p);
+            if (min_dist >= dist) {
+                if (rt.p.distanceSquaredTo(p) < nearest.distanceSquaredTo(p)){
+                    nearest = rt.p;
+                }
+                //Check which side of the splitting line to check first
+                if (rt.lb != null && rt.lb.rect.contains(p)) {
+                    nearest = nearest(rt.lb, p, nearest);
+                    nearest = nearest(rt.rt, p, nearest);
+                }
+                else {
+                    nearest = nearest(rt.rt, p, nearest);
+                    nearest = nearest(rt.lb, p, nearest);
+                }
             }
         }
         return nearest;
@@ -148,7 +157,7 @@ public class KdTree {
         
     }
     
-    public void draw(Node rt, int orientation) {     
+    private void draw(Node rt, int orientation) {     
             if (rt == null) return;
             StdDraw.setPenColor(StdDraw.BLACK);
             StdDraw.setPenRadius(0.01);
